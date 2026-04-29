@@ -1,4 +1,6 @@
 **How to use this spreadsheet**  
+![Spreadsheet Instructions](https://github.com/thezephyrsong/RollFor-WotLK/blob/main/RollForSpreadsheet/SpreadsheetInstructions.png)
+
 * Step 1	Fill in the "SR List" sheet. Each row = one player + one item. Can get players to submit via https://docs.google.com/forms/d/1AxELBQtz2v-C-fCvfQyFm6jpMJRd-G8qAfWRYxK220s/copy (just rename the form for the specific raid, making a new form for each raid) *- Don't include the timestamp from the form output*  
 * Step 2	Paste an item URL (e.g. https://epochhead.com/?item=61804) into the "Item URL" column and the Item ID will be extracted automatically. Or type the Item ID directly into the "Item ID" column.  
 * Step 3	Set SR+ to the number of times that player has lost a roll on this item without winning. Leave at 0 if none.  
