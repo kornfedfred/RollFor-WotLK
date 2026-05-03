@@ -87,7 +87,7 @@ Disable this feature with:
 ---
 
 ### Soft res integration
- * Integrates with https://softres.epoglogs.com/ (Epoch).
+ * Integrates with https://softres.epoglogs.com/ & https://raidres.top/ (Epoch).
  * Integrates with https://softres.it (Other) via Gargul Export.
  * Minimap icon shows soft res status and who did not soft res.
  * Fully automated (shows who soft ressed, only accepts rolls from players who SR).
@@ -165,9 +165,9 @@ instead of `/rf`. "arf" stands for "All Roll For".
 
 ## Soft-Res setup
 
-1. Create a Soft Res list at https://softres.epoglogs.com/ or https://softres.it
+1. Create a Soft Res list at https://softres.epoglogs.com/ or https://raidres.top/ or https://softres.it
 2. Ask raiders to add their items.
-3. When ready, lock the raid and click on **RollFor export** (softres.epoglogs.com) or **Gargul Export** (softres.it) button.
+3. When ready, lock the raid and click on **RollFor export** (softres.epoglogs.com & raidres.top) or **Gargul Export** (softres.it) button.
 
 <img src="https://github.com/thezephyrsong/RollFor-WotLK/blob/main/SoftRes/softreslocked.png" alt="SoftRes export" style="width:720px;height:350">  
 <img src="https://github.com/sica42/roll-for-vanilla/blob/master/docs/raidres-export.jpg" alt="Raidres export" style="width:720px;height:350">
