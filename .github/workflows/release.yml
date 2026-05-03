@@ -1,0 +1,16 @@
+name: Package Addon
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Required to fetch tags
+
+      - name: Package and Release
+        uses: BigWigsMods/packager@master
