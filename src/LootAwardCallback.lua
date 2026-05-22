@@ -46,7 +46,10 @@ function M.new( awarded_loot, roll_controller, winner_tracker, group_roster, sof
       end
     end
     local sr_players = softres.get( item_id )
-    local sr_player = m.find( player_name, sr_players, 'name' )
+    local sr_player = nil
+    if sr_players then
+      sr_player = m.find( player_name, sr_players, 'name' )
+    end
     local rolling_strategy
     local class
 

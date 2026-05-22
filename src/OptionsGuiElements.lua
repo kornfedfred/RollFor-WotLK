@@ -147,8 +147,10 @@ function M.create_scroll_frame( parent, name )
     local scroll_range = f:GetVerticalScrollRange()
     local v = f:GetHeight()
     local r = v + scroll_range
-    if r > 0 and v / r < 1 then
-      local size = math.floor( v * ( v / r ) )
+    local ratio2 = ( r > 0 ) and ( v / r ) or 1
+    ratio2 = math.min( 1, math.max( 0, ratio2 ) )
+    if ratio2 < 1 then
+      local size = math.floor( v * ratio2 )
       f.slider.thumb:SetHeight( size > 10 and size or 10 )
       f.slider:Show()
     else
@@ -176,6 +178,7 @@ function M.create_scroll_frame( parent, name )
     local r = f:GetHeight() + scroll_range
     local v = f:GetHeight()
     local ratio = ( r > 0 ) and ( v / r ) or 1
+    ratio = math.min( 1, math.max( 0, ratio ) )
 
     if ratio < 1 then
       local size = math.floor( v * ratio )
