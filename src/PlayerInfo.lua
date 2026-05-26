@@ -26,16 +26,40 @@ end
   local function is_master_looter()
     if not api.IsInGroup() then return false end
 
-    local loot_method, id = api.GetLootMethod()
-    if loot_method ~= "master" or not id then return false end
-    if id == 0 then return true end
+    if m.vanilla then
+      -- Vanilla: GetLootMethod returns (method, id)
+      -- Party: id = 0-4 (0 = you)
+      -- Raid: id = 1-40 (raid member index)
+      local loot_method, id = api.GetLootMethod()
+      if loot_method ~= "master" or not id then return false end
+      if id == 0 then return true end
 
-    if api.IsInRaid() then
-      local name = api.GetRaidRosterInfo( id )
-      return name == get_name()
+      if api.IsInRaid() then
+        local name = api.GetRaidRosterInfo( id )
+        return name == get_name()
+      end
+
+      return api.UnitName( "party" .. id ) == get_name()
+    else
+      -- WotLK 3.3.5a, BCC, Retail: GetLootMethod returns (method, partyMaster, raidMaster)
+      -- Party: partyMaster = 0-4, raidMaster = nil
+      -- Raid: partyMaster = nil, raidMaster = 1-40
+      local loot_method, party_id, raid_id = api.GetLootMethod()
+      if loot_method ~= "master" then return false end
+
+      if party_id == 0 then return true end
+
+      if raid_id then
+        local name = api.GetRaidRosterInfo( raid_id )
+        return name == get_name()
+      end
+
+      if party_id then
+        return api.UnitName( "party" .. party_id ) == get_name()
+      end
+
+      return false
     end
-
-    return api.UnitName( "party" .. id ) == get_name()
   end
 
   local function is_leader()
