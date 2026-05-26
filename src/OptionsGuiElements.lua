@@ -311,7 +311,7 @@ function M.create_area( parent, title, func )
   return f
 end
 
-function M.create_config( caption, setting, widget, tooltip, ufunc, options )
+function M.create_config( parent, caption, setting, widget, tooltip, ufunc, options )
   local function parse_options()
     local w = string.sub( widget, 1, (string.find( widget, "|", nil, true ) or 0) - 1 )
     local opt = {}
@@ -322,13 +322,13 @@ function M.create_config( caption, setting, widget, tooltip, ufunc, options )
     return w, opt
   end
 
-  this.object_count = this.object_count == nil and 0 or this.object_count + 1
+  parent.object_count = parent.object_count == nil and 0 or parent.object_count + 1
 
-  local config_db = this:GetParent():GetParent():GetParent().config_db
-  local frame = m.api.CreateFrame( "Frame", nil, this )
-  frame:SetWidth( this:GetParent():GetWidth() - 22 )
+  local config_db = parent:GetParent():GetParent():GetParent().config_db
+  local frame = m.api.CreateFrame( "Frame", nil, parent )
+  frame:SetWidth( parent:GetParent():GetWidth() - 22 )
   frame:SetHeight( 22 )
-  frame:SetPoint( "TOPLEFT", this, "TOPLEFT", 5, (this.object_count * -23) - 5 )
+  frame:SetPoint( "TOPLEFT", parent, "TOPLEFT", 5, (parent.object_count * -23) - 5 )
   frame.config = setting
   frame.tooltip = tooltip
 
@@ -353,12 +353,12 @@ function M.create_config( caption, setting, widget, tooltip, ufunc, options )
 
   if widget == "header" then
     frame:SetBackdrop( nil )
-    if not this.first_header then
-      this.first_header = true
+    if not parent.first_header then
+      parent.first_header = true
       frame:SetHeight( 20 )
     else
       frame:SetHeight( 40 )
-      this.object_count = this.object_count + 1
+      parent.object_count = parent.object_count + 1
     end
     frame.caption:SetJustifyH( "LEFT" )
     frame.caption:SetJustifyV( "BOTTOM" )
@@ -379,8 +379,8 @@ function M.create_config( caption, setting, widget, tooltip, ufunc, options )
       frame.input:SetFontObject( "GameFontNormal" )
       frame.input:SetAutoFocus( false )
       frame.input:SetText( config_db[ setting ] )
-      frame.input:SetScript( "OnEscapePressed", function()
-        this:ClearFocus()
+      frame.input:SetScript( "OnEscapePressed", function( self )
+        self:ClearFocus()
       end )
 
       frame.input.disable = function()
@@ -403,10 +403,10 @@ function M.create_config( caption, setting, widget, tooltip, ufunc, options )
       frame.input:SetScript( "OnEditFocusGained", function()
         frame.input:HighlightText()
       end )
-      frame.input:SetScript( "OnTextChanged", function()
-        local v = this:GetText()
+      frame.input:SetScript( "OnTextChanged", function( self )
+        local v = self:GetText()
         if ufunc then
-          ufunc( v )
+          ufunc( v, self )
         else
           config_db[ setting ] = v
         end
@@ -414,18 +414,18 @@ function M.create_config( caption, setting, widget, tooltip, ufunc, options )
     end
 
     if not widget or widget == "number" then
-      frame.input:SetScript( "OnTextChanged", function()
-        local v = tonumber( this:GetText() )
+      frame.input:SetScript( "OnTextChanged", function( self )
+        local v = tonumber( self:GetText() )
         local valid = v and ((not options.min or v >= options.min) and (not options.max or v <= options.max))
 
         if valid then
           if config_db[ setting ] ~= v then
             config_db[ setting ] = v
-            if ufunc then ufunc( v ) end
+            if ufunc then ufunc( v, self ) end
           end
-          this:SetTextColor( 0.1254, 0.6235, 0.9764, 1 )
+          self:SetTextColor( 0.1254, 0.6235, 0.9764, 1 )
         else
-          this:SetTextColor( 1, .3, .3, 1 )
+          self:SetTextColor( 1, .3, .3, 1 )
         end
       end )
     end
@@ -455,14 +455,14 @@ function M.create_config( caption, setting, widget, tooltip, ufunc, options )
         frame.caption:SetTextColor( 1, 1, 1, 1 )
       end
 
-      frame.input:SetScript( "OnClick", function()
-        if this:GetChecked() then
+      frame.input:SetScript( "OnClick", function( self )
+        if self:GetChecked() then
           config_db[ setting ] = true
         else
           config_db[ setting ] = false
         end
 
-        if ufunc then ufunc( this:GetChecked() ) end
+        if ufunc then ufunc( self:GetChecked(), self ) end
       end )
 
       if config_db[ setting ] == true then frame.input:SetChecked() end
@@ -489,24 +489,24 @@ function M.create_config( caption, setting, widget, tooltip, ufunc, options )
     local w = frame.button:GetTextWidth() + 10
     frame.button:SetWidth( w )
     frame.button:SetHeight( 20 )
-    frame.button:SetPoint( "TOPLEFT", (this:GetParent():GetWidth() / 2 - w / 2 - 10), -5 )
+    frame.button:SetPoint( "TOPLEFT", (parent:GetParent():GetWidth() / 2 - w / 2 - 10), -5 )
     local btnText = frame.button:GetFontString()
     if btnText then
       btnText:SetTextColor( 1, 1, 1, 1 )
     end
     frame.button:SetScript( "OnClick", ufunc )
-    frame.button:SetScript( "OnEnter", function()
-      this:SetBackdropBorderColor( 0.1254, 0.6235, 0.9764, 1 )
-      if this:GetParent():GetParent():GetParent():GetParent():GetParent():GetParent().show_help then
-        if this:GetParent().tooltip then
-          m.api.GameTooltip:SetOwner( this, "ANCHOR_TOPLEFT" )
-          m.api.GameTooltip:SetText( this:GetParent().tooltip )
+    frame.button:SetScript( "OnEnter", function( self )
+      self:SetBackdropBorderColor( 0.1254, 0.6235, 0.9764, 1 )
+      if self:GetParent():GetParent():GetParent():GetParent():GetParent():GetParent().show_help then
+        if self:GetParent().tooltip then
+          m.api.GameTooltip:SetOwner( self, "ANCHOR_TOPLEFT" )
+          m.api.GameTooltip:SetText( self:GetParent().tooltip )
           m.api.GameTooltip:Show()
         end
       end
     end )
-    frame.button:SetScript( "OnLeave", function()
-      this:SetBackdropBorderColor( .2, .2, .2, 1 )
+    frame.button:SetScript( "OnLeave", function( self )
+      self:SetBackdropBorderColor( .2, .2, .2, 1 )
       if m.api.GameTooltip:IsShown() then
         m.api.GameTooltip:Hide()
       end
