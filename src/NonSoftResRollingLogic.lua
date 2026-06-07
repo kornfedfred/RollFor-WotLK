@@ -183,7 +183,6 @@ function M.new(
     local player = find_player( roller.name, rollers ) ---@type RollingPlayer
 
     if not player then
-      -- Player not in the eligible rollers list (joined mid-roll, name mismatch, etc.)
       controller.roll_was_ignored( roller.name, nil, roll_type, roll, "Not in eligible rollers list." )
       return
     end

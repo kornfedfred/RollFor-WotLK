@@ -35,7 +35,9 @@ end
       return name == get_name()
     end
 
-    return api.UnitName( "party" .. id ) == get_name()
+    local party_name = api.UnitName( "party" .. id )
+    local base_party_name = party_name and ( string.match( party_name, "^([^%-]+)" ) or party_name )
+    return base_party_name == get_name()
   end
 
   local function is_leader()

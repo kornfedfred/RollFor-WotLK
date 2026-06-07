@@ -143,7 +143,6 @@ function M.create_scroll_frame( parent, name )
     if is_updating then return end
     is_updating = true
     f:SetVerticalScroll( this:GetValue() )
-    -- update thumb size but do NOT call update_scroll_state (avoids re-entry)
     local scroll_range = f:GetVerticalScrollRange()
     local v = f:GetHeight()
     local r = v + scroll_range
@@ -167,9 +166,6 @@ function M.create_scroll_frame( parent, name )
     f.slider:SetMinMaxValues( 0, scroll_range )
 
     local current_scroll = f:GetVerticalScroll()
-
-    -- Clamp slider value without triggering OnValueChanged re-entry.
-    -- We set is_updating=true above so OnValueChanged will bail immediately.
     local slider_val = f.slider:GetValue()
     if math.abs( slider_val - current_scroll ) > 0.1 then
       f.slider:SetValue( current_scroll )

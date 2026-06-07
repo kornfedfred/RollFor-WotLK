@@ -379,7 +379,6 @@ function M.new( ace_timer, player_info, rolling_popup, config, awarded_loot )
           m.api.PlaySound( "PVPTHROUGHQUEUE" )
         end
 
-        -- Record the award in the winners list for all non-ML raid members
         if awarded_loot and data.item_id and data.player_name then
           local already_recorded = awarded_loot.has_item_been_awarded( data.player_name, data.item_id )
           if not already_recorded then
@@ -410,7 +409,10 @@ function M.new( ace_timer, player_info, rolling_popup, config, awarded_loot )
 
   local function on_message( data_str, sender )
     local command = string.match( data_str, "^(.-)::" )
-    if sender == player_info.get_name() then return end
+    -- Strip realm suffix before comparing so cross-realm ML broadcasts
+    -- from ourselves are correctly ignored.
+    local sender_name = string.match( sender, "^([^%-]+)" ) or sender
+    if sender_name == player_info.get_name() then return end
     if config.client_show_roll_popup() == "Off" and command ~= "ENABLE_ROLL_POPUP" then return end
 
     data_str = string.gsub( data_str, "^.-::", "" )

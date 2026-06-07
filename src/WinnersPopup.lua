@@ -257,7 +257,6 @@ function M.new( popup_builder, frame_builder, db, awarded_loot, roll_controller,
       winners_data = filter( winners_data, function( item )
         local quality = item.quality or 0
         local roll_type = item.roll_type or "NA"
-        -- If the roll_type key is absent from the filter table entirely, show it by default
         local roll_type_visible = m.table_contains_value( rolltype_filter, roll_type )
             or award_filters.roll_type[ roll_type ] == nil
         return m.table_contains_value( quality_filter, quality ) and roll_type_visible
@@ -487,9 +486,6 @@ function M.new( popup_builder, frame_builder, db, awarded_loot, roll_controller,
     end
   end
 
-  -- Debounce rapid award_data_updated events (e.g. 5 items dropping at once
-  -- each triggering a broadcast) into a single UI refresh after 150ms of quiet.
-  -- This prevents the Winners popup from doing a full redraw for every packet.
   local refresh_timer = nil
 
   local function flush_refresh()
@@ -502,7 +498,6 @@ function M.new( popup_builder, frame_builder, db, awarded_loot, roll_controller,
   local function award_data_updated()
     M.debug.add( "award_data_updated" )
     if not ace_timer then
-      -- No timer available (e.g. during tests), refresh immediately
       if popup and popup:IsVisible() then refresh( 0 ) end
       return
     end

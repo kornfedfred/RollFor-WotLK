@@ -755,8 +755,6 @@ function M.new(
       ml_confirmation_data = nil
       loot_award_popup.hide()
     end
-    -- Extract roll details for this specific winner so ClientBroadcast can
-    -- include them in the AWARDED packet for non-ML raid members.
     local data, current_iteration = roll_tracker.get()
     local roll_type_for_event = nil
     local winning_roll_for_event = nil

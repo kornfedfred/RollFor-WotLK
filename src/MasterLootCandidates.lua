@@ -53,7 +53,8 @@ function M.new( api, group_roster, loot_list )
       -- Group legacy 1-argument APIs together (Vanilla and 3.3.5 WotLK)
       if m.vanilla or m.wotlk then
         ---@diagnostic disable-next-line: missing-parameter
-        local name = api.GetMasterLootCandidate( i )
+        local raw_name = api.GetMasterLootCandidate( i )
+        local name = raw_name and ( string.match( raw_name, "^([^%-]+)" ) or raw_name )
 
         for _, p in ipairs( players ) do
           if name == p.name then
@@ -62,7 +63,8 @@ function M.new( api, group_roster, loot_list )
         end
       else
         -- Modern clients (BCC, Retail, WotLK Classic) require the slot
-        local name = api.GetMasterLootCandidate( slot, i )
+        local raw_name = api.GetMasterLootCandidate( slot, i )
+        local name = raw_name and ( string.match( raw_name, "^([^%-]+)" ) or raw_name )
 
         for _, p in ipairs( players ) do
           if name == p.name then
@@ -97,14 +99,14 @@ function M.new( api, group_roster, loot_list )
 
     local function get_index( slot, player_name )
     for i = 1, 40 do
-      -- Group legacy 1-argument APIs together (Vanilla and 3.3.5 WotLK)
       if m.vanilla or m.wotlk then
         ---@diagnostic disable-next-line: missing-parameter
-        local name = api.GetMasterLootCandidate( i )
+        local raw_name = api.GetMasterLootCandidate( i )
+        local name = raw_name and ( string.match( raw_name, "^([^%-]+)" ) or raw_name )
         if name == player_name then return i end
       else
-        -- Modern clients (BCC, Retail, WotLK Classic) require the slot
-        local name = api.GetMasterLootCandidate( slot, i )
+        local raw_name = api.GetMasterLootCandidate( slot, i )
+        local name = raw_name and ( string.match( raw_name, "^([^%-]+)" ) or raw_name )
         if name == player_name then return i end
       end
     end

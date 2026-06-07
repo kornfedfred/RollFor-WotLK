@@ -430,7 +430,10 @@ end
 
 function M.on_chat_msg_system( message )
   for player_name, roll, min, max in string.gmatch( message, "([^%s]+) rolls (%d+) %((%d+)%-(%d+)%)" ) do
-    on_roll( player_name, tonumber( roll ), tonumber( min ), tonumber( max ) )
+    -- Strip realm suffix (e.g. "Playername-RealmName" -> "Playername") so the
+    -- name matches the roster which stores plain names without realm suffixes.
+    local base_name = string.match( player_name, "^([^%-]+)" ) or player_name
+    on_roll( base_name, tonumber( roll ), tonumber( min ), tonumber( max ) )
     return
   end
 

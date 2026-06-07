@@ -40,13 +40,15 @@ function M.new( loot_list, api, db, config, player_info )
   local function find_my_candidate_index( slot )
     for i = 1, 40 do
       if m.vanilla then
-        local name = m.api.GetMasterLootCandidate( i )
+        local raw_name = m.api.GetMasterLootCandidate( i )
+        local name = raw_name and ( string.match( raw_name, "^([^%-]+)" ) or raw_name )
 
         if name == api().UnitName( "player" ) then
           return i
         end
       else
-        local name = m.api.GetMasterLootCandidate( slot, i )
+        local raw_name = m.api.GetMasterLootCandidate( slot, i )
+        local name = raw_name and ( string.match( raw_name, "^([^%-]+)" ) or raw_name )
 
         if name == api().UnitName( "player" ) then
           return i

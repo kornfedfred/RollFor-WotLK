@@ -54,9 +54,13 @@ function M.new( api, player_info )
 
     if api.IsInRaid() then
       for i = 1, 40 do
-        local name, _, _, _, class, _, location = api.GetRaidRosterInfo( i )
-        local player = { name = name, class = class, online = location ~= "Offline" and true or false }
-        if name and (not f or f( player )) then table.insert( result, player ) end
+        local name, _, _, _, class, _, online = api.GetRaidRosterInfo( i )
+        if name then
+          -- Strip realm suffix so names match CHAT_MSG_SYSTEM roll events
+          local base_name = string.match( name, "^([^%-]+)" ) or name
+          local player = { name = base_name, class = class, online = online and true or false }
+          if not f or f( player ) then table.insert( result, player ) end
+        end
       end
 
       sort( result )
@@ -65,13 +69,17 @@ function M.new( api, player_info )
 
     local party = { "player", "party1", "party2", "party3", "party4" }
 
-for _, v in ipairs( party ) do
-  local name = api.UnitName( v )
-  local _, class = api.UnitClass( v )
-  local online = v == "player" or (api.UnitIsConnected( v ) and true or false)
-  local player = name and class and make_player( name, class, online )
-  if player and (not f or f( player )) then table.insert( result, player ) end
-end
+    for _, v in ipairs( party ) do
+      local name = api.UnitName( v )
+      local _, class = api.UnitClass( v )
+      local online = v == "player" or (api.UnitIsConnected( v ) and true or false)
+      if name then
+        -- Strip realm suffix for consistency with roll event parsing
+        local base_name = string.match( name, "^([^%-]+)" ) or name
+        local player = class and make_player( base_name, class, online )
+        if player and (not f or f( player )) then table.insert( result, player ) end
+      end
+    end
 
     sort( result )
     return result
