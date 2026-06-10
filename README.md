@@ -1,13 +1,9 @@
 # RollFor
 A World of Warcraft (3.3.5) addon that manages rolling for items.  
 
-## New in this branch:
-* Listens to raider whispers of "?sr" and auto-responds telling them what they have SoftReserved
-* Added a scrollable window to view SRs in game
-* Added the option to not announce whether something is SRed, and then allowed open rolls for SR items.
+## New in this version:
+* Added a command to look at and edit the +1s in game using /pl
 
-  
-<img src="https://github.com/thezephyrsong/RollFor-WotLK/blob/SRTable/SoftRes/srtableingame.png?raw=true">
 
 
 ### NEW
@@ -92,6 +88,12 @@ Disable this feature with:
  * Integrates with https://softres.it (Other) via Gargul Export.
  * Minimap icon shows soft res status and who did not soft res.
  * Fully automated (shows who soft ressed, only accepts rolls from players who SR).
+ * Listens to raider whispers of "?sr" and auto-responds telling them what they have SoftReserved
+ * Added a scrollable window to view SRs in game
+ * Added the option to not announce whether something is SRed, and then allowed open rolls for SR items.
+
+<img src="https://github.com/thezephyrsong/RollFor-WotLK/blob/SRTable/SoftRes/srtableingame.png?raw=true">
+
 
 ---
 
