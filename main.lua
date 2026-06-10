@@ -195,6 +195,7 @@ local function create_components()
   M.options_popup = m.OptionsPopup.new( popup_builder(), M.awarded_loot, M.version_broadcast, M.config_event_bus, M.confirm_popup, M.group_roster, db( "options_popup" ), db( "config" ), M.config )
 
   M.softres_gui = m.SoftResGui.new( M.api, M.import_encoded_softres_data, M.softres_check, M.softres, clear_data, M.dropped_loot_announce.reset, M.ace_timer, M.group_roster, M.unfiltered_softres )
+  M.plus_ones_gui = m.PlusOnesGui.new( M.api, M.awarded_loot, M.group_roster, M.confirm_popup )
   M.sr_listener = m.SrListener.new( M.player_info, M.unfiltered_softres )
   M.trade_tracker = m.TradeTracker.new( M.ace_timer, M.chat, trade_complete_callback )
   M.usage_printer = m.UsagePrinter.new( M.chat )
@@ -470,38 +471,32 @@ local function on_reset_dropped_loot_announce_command()
 end
 
 local function plus_ones_command( args )
-  local loot = M.awarded_loot.get_winners()
-  local players = {}
-  for _, award in ipairs(loot) do
-    if award ~= nil then
-      if not players[award.player_name] then players[award.player_name] = { award }
-      else table.insert(players[award.player_name], award) end
+  -- No args: open the +1s GUI panel
+  if args == "" then
+    if M.plus_ones_gui then
+      M.plus_ones_gui.toggle()
+    else
+      M.chat.info( "PlusOnesGui is not initialized yet." )
     end
+    return
   end
 
-  if args == "" then
-    local plus_ones_exist = false
-    for player_name, awards in pairs(players) do
-      local plus_ones = m.filter(awards, (function(a) return a.plus_one end))
-      if getn(plus_ones) > 0 then
-        plus_ones_exist = true
-        local item_list = table.concat(m.map(plus_ones, (function (a) return a.item_link end)), " ")
-        local colored_player_name = m.colorize_player_by_class( player_name, awards[1].player_class ) or grey( player_name )
-        M.chat.info( colored_player_name .. green(" MS +" .. getn(plus_ones)) .. ": " .. item_list)
-      end
-    end
-    if not plus_ones_exist then M.chat.info("There are no +1's yet") end
+  -- Sub-commands: add / rm / remove (unchanged behaviour)
+  local action, player_name, item_link = string.match(args, "^(%S+) (%S+) (|%w+|Hitem.+|r)$")
+  local item_id = item_link and M.item_utils.get_item_id( item_link )
+  local group_players = M.group_roster.get_all_players_in_my_group()
+  local player = player_name and m.filter(group_players, (function (p) return string.lower(p.name) == string.lower(player_name) end))[1]
+  if action == "add" and player and item_id then
+    local roll_data = { player_name = player.name, player_class = player.class, roll_type = RollType.MainSpec, roll = 0, plus_ones = 0 }
+    M.awarded_loot.award( player.name, item_id, roll_data, RollingStrategy.NormalRoll, item_link, player.class, nil, true)
+    if M.plus_ones_gui then M.plus_ones_gui.show() end
+  elseif (action == "rm" or action == "remove") and player and item_id then
+    M.unaward_item( player.name, item_id, item_link )
+    if M.plus_ones_gui then M.plus_ones_gui.show() end
   else
-    local action, player_name, item_link = string.match(args, "^(%S+) (%S+) (|%w+|Hitem.+|r)$")
-    local item_id = item_link and M.item_utils.get_item_id( item_link )
-    local group_players = M.group_roster.get_all_players_in_my_group()
-    local player = player_name and m.filter(group_players, (function (p) return string.lower(p.name) == string.lower(player_name) end))[1]
-    if action == "add" and player and item_id then
-      local roll_data = { player_name = player.name, player_class = player.class, roll_type = RollType.MainSpec, roll = 0, plus_ones = 0 }
-      M.awarded_loot.award( player.name, item_id, roll_data, RollingStrategy.NormalRoll, item_link, player.class, nil, true)
-    elseif (action == "rm" or action == "remove") and player and item_id then
-      M.unaward_item( player.name, item_id, item_link )
-    end
+    M.chat.info( "Usage: /pl              → open the +1s panel" )
+    M.chat.info( "       /pl add <name> <item>    → manually add a +1" )
+    M.chat.info( "       /pl rm  <name> <item>    → remove a +1" )
   end
 end
 

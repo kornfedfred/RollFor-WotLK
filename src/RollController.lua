@@ -272,9 +272,10 @@ function M.new(
     loot_award_popup.show( ml_confirmation_data )
   end
 
-  -- Build an award callback for a winner. If the item has a real loot slot,
-  -- uses the normal ML confirmation flow. If rolling from bags (no slot),
-  -- falls back to recording the award directly without GiveMasterLoot.
+  -- Build an award callback for a winner. If the item has a real loot slot
+  -- and the player is on the ML candidate list, uses the normal ML confirmation
+  -- flow. Falls back to recording the award directly if no slot is available
+  -- or the candidate lookup fails (e.g. loot window already closed).
   local function make_award_callback( player, dropped_item, strategy_type )
     local item = dropped_item or currently_displayed_item
     if not item then return nil end
@@ -284,11 +285,19 @@ function M.new(
 
     if candidate then
       return function()
-        show_master_loot_confirmation( candidate, item, strategy_type )
+        -- Re-check slot/candidate at click time; fall back to direct award if gone.
+        local click_slot = loot_list.get_slot( item.id )
+        local click_candidate = click_slot and ml_candidates.find( click_slot, player.name )
+        if click_candidate then
+          show_master_loot_confirmation( click_candidate, item, strategy_type )
+        elseif loot_award_callback then
+          rolling_popup.hide()
+          loot_award_callback.on_loot_awarded( item.id, item.link, player.name, player.class )
+        end
       end
     end
 
-    -- Fallback: No loot slot (bag roll)
+    -- Fallback: No loot slot (bag roll) or player not on ML candidate list.
     if loot_award_callback then
       return function()
         rolling_popup.hide()
@@ -500,7 +509,9 @@ function M.new(
   local function normal_roll_winners( data, current_iteration, candidates )
     local item = data.item
     local buttons = {}
-    local dropped_item = loot_list.get_by_id( item.id )
+    -- Use item directly so the award callback works even if the loot slot
+    -- has already closed (dropped_item may be nil in that case).
+    local dropped_item = loot_list.get_by_id( item.id ) or item
     local candidate_count = getn( candidates )
     local winners = m.map( data.winners,
       function( player )
@@ -509,9 +520,12 @@ function M.new(
         return { name = player.name, class = player.class, roll_type = player.roll_type, roll = player.winning_roll, award_callback = award_callback }
       end
     )
-    if getn( winners ) == 1 and winners[ 1 ].award_callback then
-      add_award_winner_button( buttons, winners[ 1 ].award_callback )
-      winners[ 1 ].award_callback = nil
+    -- Add an Award button for each winner (handles multi-item rolls with mixed MS/OS winners).
+    for _, winner in ipairs( winners ) do
+      if winner.award_callback then
+        add_award_winner_button( buttons, winner.award_callback )
+        winner.award_callback = nil
+      end
     end
     add_raid_roll_button( buttons, "RaidRoll", item, data.item_count )
     if candidate_count > 0 then add_award_other_button( dropped_item, buttons, candidates, winners, RS.NormalRoll ) end
