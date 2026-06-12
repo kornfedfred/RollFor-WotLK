@@ -68,6 +68,7 @@ src\AutoMasterLoot.lua
 src\RollTracker.lua
 src\RollController.lua
 src\RollingPopup.lua
+src\Changelog.lua
 src\OptionsGuiElements.lua
 src\OptionsPopup.lua
 src\WinnersPopup.lua
