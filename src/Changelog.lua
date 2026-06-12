@@ -9,6 +9,8 @@ if m.Changelog then return end
 local M = {}
 
 M.entries = {
+  { ver = "1.2.2", text = "Bug fix and seperate changelog" },
+  { ver = "1.2.1", text = "Aggregate per-player +1s & multiline rows" },
   { ver = "1.2.0", text = "Add +1s GUI and improve award handling" },
   { ver = "1.1.8", text = "Strip realm suffix from player names" },
   { ver = "1.1.7", text = "Add guards for nil checks and unknown roll types" },
