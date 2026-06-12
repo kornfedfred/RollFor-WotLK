@@ -29,8 +29,8 @@ local control_backdrop = {
 local FRAME_WIDTH   = 600
 local FRAME_HEIGHT  = 460
 local COL_PLAYER    = 160
-local COL_ITEM      = 300
 local COL_COUNT     = 80
+local COL_ITEM      = 300
 local ROW_HEIGHT    = 18
 local HEADER_HEIGHT = 22
 
@@ -86,9 +86,10 @@ local function create_table_frame( api, awarded_loot, group_roster, confirm_popu
     fs:SetText( m.colors.white( label ) )
   end
 
-  make_header_cell( "Player", 0,                     COL_PLAYER )
-  make_header_cell( "Item",   COL_PLAYER,             COL_ITEM )
-  make_header_cell( "+1s",    COL_PLAYER + COL_ITEM,  COL_COUNT )
+  -- Rearranged headers: Player -> +1s -> Items Received
+  make_header_cell( "Player",         0,                       COL_PLAYER )
+  make_header_cell( "Total +1s",      COL_PLAYER,              COL_COUNT )
+  make_header_cell( "Items Received", COL_PLAYER + COL_COUNT,  COL_ITEM )
 
   -- Scroll frame
   local scroll_frame = api().CreateFrame( "ScrollFrame", "RollForPlusOnesScroll", inner, "UIPanelScrollFrameTemplate" )
@@ -107,29 +108,32 @@ local function create_table_frame( api, awarded_loot, group_roster, confirm_popu
     local row = row_pool[ index ]
     if not row then
       row = api().CreateFrame( "Frame", nil, scroll_child )
-      row:SetHeight( ROW_HEIGHT )
 
       local bg = row:CreateTexture( nil, "BACKGROUND" )
       bg:SetAllPoints()
       row.bg = bg
 
+      -- Modified to anchor TOPLEFT and support multi-line growth
       local function make_cell( x, w, justify )
         local fs = row:CreateFontString( nil, "OVERLAY", "GameFontNormalSmall" )
-        fs:SetPoint( "LEFT", row, "LEFT", x + 4, 0 )
+        fs:SetPoint( "TOPLEFT", row, "TOPLEFT", x + 4, -3 )
         fs:SetWidth( w - 8 )
+        fs:SetHeight( 0 ) -- Allows vertical expansion
         fs:SetJustifyH( justify or "LEFT" )
+        fs:SetJustifyV( "TOP" )
         return fs
       end
 
-      row.cell_player = make_cell( 0,                     COL_PLAYER )
-      row.cell_item   = make_cell( COL_PLAYER,             COL_ITEM )
-      row.cell_count  = make_cell( COL_PLAYER + COL_ITEM,  COL_COUNT, "CENTER" )
+      -- Grid arrangement matching new column order
+      row.cell_player = make_cell( 0,                       COL_PLAYER )
+      row.cell_count  = make_cell( COL_PLAYER,              COL_COUNT, "CENTER" )
+      row.cell_item   = make_cell( COL_PLAYER + COL_COUNT,  COL_ITEM )
 
-      -- Remove button (tiny "X")
+      -- Remove button (tiny "X") pinned to the top right of the row block
       local remove_btn = api().CreateFrame( "Button", nil, row )
       remove_btn:SetWidth( 14 )
       remove_btn:SetHeight( 14 )
-      remove_btn:SetPoint( "RIGHT", row, "RIGHT", -4, 0 )
+      remove_btn:SetPoint( "TOPRIGHT", row, "TOPRIGHT", -4, -3 )
       local remove_text = remove_btn:CreateFontString( nil, "OVERLAY", "GameFontNormalSmall" )
       remove_text:SetAllPoints()
       remove_text:SetText( m.colors.red( "✕" ) )
@@ -137,7 +141,6 @@ local function create_table_frame( api, awarded_loot, group_roster, confirm_popu
         remove_btn:GetParent().bg:SetTexture( 0.4, 0.1, 0.1, 0.5 )
       end )
       remove_btn:SetScript( "OnLeave", function()
-        -- bg will be reset on next render_rows call; just dim back
         remove_btn:GetParent().bg:SetTexture( 0.12, 0.06, 0.06, 0.8 )
       end )
       row.remove_btn = remove_btn
@@ -147,18 +150,26 @@ local function create_table_frame( api, awarded_loot, group_roster, confirm_popu
     return row
   end
 
-  -- last_rows: list of { player_name, player_class, item_link, item_id, count }
   local last_rows = {}
 
   local function render_rows()
     local total_width = scroll_frame:GetWidth()
+    local y_offset = 0 -- Mutable tracker for dynamic row heights
 
     for i, data in ipairs( last_rows ) do
       local row = acquire_row( i )
       row:ClearAllPoints()
-      row:SetPoint( "TOPLEFT", scroll_child, "TOPLEFT", 0, -( (i - 1) * ROW_HEIGHT ) )
+      row:SetPoint( "TOPLEFT", scroll_child, "TOPLEFT", 0, -y_offset )
       row:SetWidth( total_width )
       row:Show()
+
+      -- Dynamically calculate row height based on item count lines
+      local num_items = #data.items
+      local current_row_height = math.max( 1, num_items ) * ROW_HEIGHT
+      row:SetHeight( current_row_height )
+
+      -- Increment offset for the next row loop
+      y_offset = y_offset + current_row_height
 
       if i % 2 == 0 then
         row.bg:SetTexture( 0.10, 0.05, 0.05, 0.8 )
@@ -177,28 +188,19 @@ local function create_table_frame( api, awarded_loot, group_roster, confirm_popu
       end
 
       row.cell_player:SetText( player_text )
-      row.cell_item:SetText( data.item_link or m.colors.grey( tostring( data.item_id ) ) )
+      row.cell_item:SetText( data.item_context_string )
       row.cell_count:SetText( m.colors.green( tostring( data.count ) ) )
 
-      -- Wire up the remove button for this specific row
       local captured = data
       row.remove_btn:SetScript( "OnClick", function()
+        local last_item = captured.items[ #captured.items ]
+        if not last_item then return end
+
         confirm_popup.show(
-          { "Remove +1 for " .. ( captured.item_link or "this item" ) .. " from " .. captured.player_name .. "?", "Are you sure?" },
+          { "Remove latest +1 (" .. last_item.item_link .. ") from " .. captured.player_name .. "?", "Are you sure?" },
           function( yes )
             if yes then
-              -- Find the DB index for this specific plus_one entry and unaward it.
-              -- We unaward by scanning awarded_items for a matching plus_one entry.
-              local all = awarded_loot.get_winners()
-              for idx = #all, 1, -1 do
-                local entry = all[ idx ]
-                if entry.player_name == captured.player_name
-                    and entry.item_id == captured.item_id
-                    and entry.plus_one then
-                  awarded_loot.update_item( idx, { plus_one = false } )
-                  break
-                end
-              end
+              awarded_loot.update_item( last_item.db_idx, { plus_one = false } )
               frame.rebuild()
             end
           end
@@ -212,51 +214,50 @@ local function create_table_frame( api, awarded_loot, group_roster, confirm_popu
       if row_pool[ i ] then row_pool[ i ]:Hide() end
     end
 
-    scroll_child:SetHeight( math.max( 1, #last_rows * ROW_HEIGHT ) )
+    scroll_child:SetHeight( math.max( 1, y_offset ) )
     scroll_child:SetWidth( math.max( 1, total_width ) )
     scroll_frame:UpdateScrollChildRect()
     scroll_frame:SetVerticalScroll( 0 )
   end
 
-  -- Build the flat list of +1 entries from awarded_loot.
   local function build_rows()
-    local rows = {}
+    local players = {}
     local all = awarded_loot.get_winners()
 
-    for _, entry in ipairs( all ) do
+    for idx, entry in ipairs( all ) do
       if entry.plus_one then
-        table.insert( rows, {
-          player_name  = entry.player_name,
-          player_class = entry.player_class,
-          item_id      = entry.item_id,
-          item_link    = entry.item_link,
-          count        = 1,  -- one entry = one +1
+        if not players[ entry.player_name ] then
+          players[ entry.player_name ] = {
+            player_name  = entry.player_name,
+            player_class = entry.player_class,
+            items        = {},
+            count        = 0
+          }
+        end
+
+        table.insert( players[ entry.player_name ].items, {
+          item_link = entry.item_link or m.colors.grey( tostring( entry.item_id ) ),
+          db_idx    = idx
         } )
+        
+        players[ entry.player_name ].count = players[ entry.player_name ].count + 1
       end
     end
 
-    -- Sort by player name then item
-    table.sort( rows, function( a, b )
-      if a.player_name ~= b.player_name then return a.player_name < b.player_name end
-      return ( a.item_id or 0 ) < ( b.item_id or 0 )
-    end )
-
-    -- Collapse: merge consecutive same-player+item entries into a count
     local collapsed = {}
-    for _, row in ipairs( rows ) do
-      local last = collapsed[ #collapsed ]
-      if last and last.player_name == row.player_name and last.item_id == row.item_id then
-        last.count = last.count + 1
-      else
-        table.insert( collapsed, {
-          player_name  = row.player_name,
-          player_class = row.player_class,
-          item_id      = row.item_id,
-          item_link    = row.item_link,
-          count        = 1,
-        } )
+    for _, data in pairs( players ) do
+      local links = {}
+      for _, it in ipairs( data.items ) do
+        table.insert( links, it.item_link )
       end
+      -- Separated by "\n" newline instead of commas to break downward
+      data.item_context_string = table.concat( links, "\n" )
+      table.insert( collapsed, data )
     end
+
+    table.sort( collapsed, function( a, b )
+      return a.player_name < b.player_name
+    end )
 
     return collapsed
   end
